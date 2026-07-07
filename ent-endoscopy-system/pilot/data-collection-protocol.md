@@ -1,4 +1,0 @@
-# Data Collection Protocol
-
-TBD.
-
