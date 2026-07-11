@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ENT Endoscopy System - Diagnostic Dashboard</title>
+  <!-- Google Fonts: Outfit for Headings, Inter for Body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-icon"></div>
+        <div class="logo-text">
+          <h1>Biomed ENT-Endoscopy</h1>
+          <p>Diagnostic Dashboard & Simulator</p>
+        </div>
+      </div>
+      <div class="system-status">
+        <span class="status-dot online"></span>
+        <span class="status-label">ESP32 Connected: <strong>WiFi-Active</strong></span>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="grid-layout">
+      
+      <!-- Left Column: Camera Feed & Local Controls -->
+      <section class="card camera-feed-card">
+        <div class="card-header">
+          <h2>ESP32 Camera Live View</h2>
+          <div class="badge streaming-badge" id="streamingBadge">Idle</div>
+        </div>
+        
+        <div class="viewport-container">
+          <canvas id="cameraCanvas" width="640" height="480"></canvas>
+          <div class="viewport-overlay" id="viewportOverlay">
+            <span class="overlay-text">Stream Stopped</span>
+          </div>
+          <!-- WebRTC Call overlay -->
+          <div class="webrtc-overlay" id="webrtcOverlay">
+            <div class="remote-video-container">
+              <div class="doctor-badge">Dr. Sarah Jenkins (Teleconsult)</div>
+              <div class="pulse-ring"></div>
+              <span class="call-timer" id="callTimer">00:00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="camera-controls">
+          <button id="btnWifiStream" class="btn btn-primary">Start Wi-Fi Stream</button>
+          <button id="btnBleStream" class="btn btn-secondary">Start BLE Sync</button>
+          <button id="btnCapture" class="btn btn-accent" disabled>Capture Frame</button>
+        </div>
+      </section>
+
+      <!-- Right Column: Diagnostics, Teleconsult & Hardware -->
+      <div class="right-column-grid">
+        
+        <!-- ML Diagnostic Card -->
+        <section class="card diagnostic-card">
+          <div class="card-header">
+            <h2>ML Diagnostic Assistant</h2>
+            <div class="badge ml-badge">TFLite v1.2</div>
+          </div>
+          
+          <div class="card-body">
+            <p class="description">Analyze current frame using the embedded classification model.</p>
+            
+            <div class="diagnostic-action">
+              <button id="btnRunInference" class="btn btn-block btn-accent-gradient" disabled>Run TFLite Inference</button>
+            </div>
+
+            <div class="result-display" id="resultDisplay">
+              <div class="empty-state">
+                <p>Awaiting snapshot capture...</p>
+              </div>
+              <div class="inference-result hidden" id="inferenceResult">
+                <div class="result-row">
+                  <span class="result-label">Classification:</span>
+                  <span class="result-value" id="diagnosisLabel">-</span>
+                </div>
+                <div class="result-row">
+                  <span class="result-label">Confidence:</span>
+                  <span class="result-value" id="confidenceLabel">-</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div class="progress-bar" id="confidenceBar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Hardware Controls -->
+        <section class="card hardware-card">
+          <div class="card-header">
+            <h2>ESP32 Device Hardware</h2>
+          </div>
+          <div class="card-body">
+            <div class="hardware-control-row">
+              <div class="control-label">
+                <h3>Illumination (LED)</h3>
+                <p>Toggle and adjust the probe LED light intensity.</p>
+              </div>
+              <div class="control-inputs">
+                <label class="switch">
+                  <input type="checkbox" id="ledToggle">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="brightness-slider-container">
+              <span>0%</span>
+              <input type="range" id="ledBrightness" min="0" max="100" value="50" disabled>
+              <span>100%</span>
+              <span class="brightness-value" id="brightnessVal">50%</span>
+            </div>
+
+            <div class="hardware-stats">
+              <div class="stat-box">
+                <div class="stat-title">Battery</div>
+                <div class="stat-value">84%</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-title">ESP32 Temp</div>
+                <div class="stat-value">42°C</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-title">Signal</div>
+                <div class="stat-value">-67 dBm</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Teleconsultation Card -->
+        <section class="card teleconsult-card">
+          <div class="card-header">
+            <h2>WebRTC Teleconsultation</h2>
+          </div>
+          <div class="card-body">
+            <p class="description">Initiate an encrypted WebRTC room to stream video and share diagnostic results with a remote consultant.</p>
+            <div class="teleconsult-actions">
+              <button id="btnTeleconsult" class="btn btn-block btn-primary">Start Teleconsult Session</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Bottom logs section -->
+    <section class="card logs-card">
+      <div class="card-header">
+        <h2>System Activity Logs</h2>
+        <button id="btnClearLogs" class="btn btn-text">Clear</button>
+      </div>
+      <div class="logs-container" id="logsContainer">
+        <div class="log-entry system">[SYSTEM] Dashboard initialized and connected to server.</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
