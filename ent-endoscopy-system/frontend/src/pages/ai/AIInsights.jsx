@@ -2,11 +2,12 @@ import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useApi, Loading, ErrorState, EmptyState } from '../../hooks/useApi';
 
 /**
- * Descriptive practice overview. The previous version showed hardcoded figures
- * (1,284 consultations, 94.8% AI accuracy, revenue series, diagnosis split)
- * with no data source. This page shows only live database aggregates.
+ * Descriptive operational overview. The previous version presented fabricated
+ * forecasts (bed occupancy predictions, per-patient no-show risk scores, disease
+ * trends, and a "94.2% accuracy" model badge) with no model behind them. This
+ * page now shows only live database aggregates and labels them as such.
  */
-export default function DoctorAnalytics() {
+export default function AIInsights() {
   const { data, loading, error, reload } = useApi('/api/v1/analytics/summary');
   const { data: trend } = useApi('/api/v1/analytics/appointments-by-day?limit=14');
   const chartData = (trend?.data || []).map((d) => ({ date: (d.date || '').slice(5), count: d.count }));
@@ -15,14 +16,14 @@ export default function DoctorAnalytics() {
     <div className="animate-fadeIn">
       <div className="clinical-header">
         <div>
-          <p className="eyebrow eyebrow--pine">Practice · descriptive counts, not model output</p>
-          <h1 style={{ marginTop: 8 }}>Analytics</h1>
-          <p className="page-subtitle">Live database aggregates · no AI accuracy or revenue model exists here</p>
+          <p className="eyebrow eyebrow--pine">Operations · descriptive counts, not predictions</p>
+          <h1 style={{ marginTop: 8 }}>Operational overview</h1>
+          <p className="page-subtitle">Computed live from the database · no forecasting model is configured</p>
         </div>
         <button className="btn btn-sm" onClick={reload}>Refresh</button>
       </div>
 
-      {loading && <Loading label="Loading analytics…" />}
+      {loading && <Loading label="Loading summary…" />}
       {error && <ErrorState error={error} onRetry={reload} />}
       {data && (
         <>
@@ -35,7 +36,7 @@ export default function DoctorAnalytics() {
           <div className="card">
             <div className="section-title">Appointments by day (history)</div>
             {chartData.length === 0 ? <EmptyState title="No appointment history yet" /> : (
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={chartData}>
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} axisLine={{ stroke: 'var(--border-color)' }} tickLine={false} />
                   <Tooltip contentStyle={{ background: '#101614', color: '#EDE8DB', border: '1px solid #2A342E', borderRadius: 8 }} />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Menu, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -6,64 +7,55 @@ import { useTheme } from '../../contexts/ThemeContext';
 export default function Topbar({ onMenuToggle, title, subtitle }) {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const initials = (user?.name || 'M').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+  const patientsPath =
+    user?.role === 'patient' ? '/patient/history' :
+    user?.role === 'doctor' ? '/doctor/patients' :
+    user?.role === 'admin' ? '/admin/patients' : '/nurse/patients';
+  const notifPath =
+    user?.role === 'patient' ? '/patient/notifications' :
+    user?.role === 'doctor' ? '/doctor/dashboard' :
+    user?.role === 'admin' ? '/admin/dashboard' : '/nurse/dashboard';
 
   return (
     <header className="app-topbar">
-      {/* Hamburger */}
-      <button className="btn-icon" onClick={onMenuToggle} style={{ marginRight: 16 }}>
-        <Menu size={22} strokeWidth={2.5} />
+      <button className="btn-icon" onClick={onMenuToggle} aria-label="Toggle menu">
+        <Menu size={19} strokeWidth={2} />
       </button>
 
-      {/* Page title */}
-      <div style={{ flex: 1 }}>
-        {title && (
-          <div style={{ fontSize: '1.1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>
-            {title}
-          </div>
-        )}
-        {subtitle && (
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            {subtitle}
-          </div>
-        )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {title && <div style={{ fontSize: '0.98rem', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>}
+        {subtitle && <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{subtitle}</div>}
       </div>
 
-      {/* Right actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {/* Search */}
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, color: 'var(--text-muted)', pointerEvents: 'none' }} />
-          <input
-            className="form-input"
-            placeholder="Search..."
-            style={{ width: 200, paddingLeft: 34, height: 40, fontSize: '0.82rem' }}
-          />
-        </div>
-
-        {/* Theme */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <form
+          className="topbar-search"
+          style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+          onSubmit={(e) => { e.preventDefault(); navigate(patientsPath); }}
+        >
+          <Search size={14} style={{ position: 'absolute', left: 11, color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <input className="form-input" placeholder="Search patients, doctors…" value={q} onChange={(e) => setQ(e.target.value)}
+            style={{ width: 210, paddingLeft: 32, height: 36, fontSize: '0.82rem' }} />
+        </form>
         <button className="btn-icon" onClick={toggleTheme} title="Toggle theme">
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
         </button>
-
-        {/* Notifications */}
-        <div style={{ position: 'relative' }}>
-          <button className="btn-icon">
-            <Bell size={18} />
-          </button>
-          <span style={{ position: 'absolute', top: 2, right: 2, width: 8, height: 8, background: 'var(--brand-red)', border: '2px solid var(--bg-card)' }} />
-        </div>
-
-        {/* User chip */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', border: '2px solid var(--border-color)', background: 'var(--bg-hover)', marginLeft: 8 }}>
-          <div style={{ width: 28, height: 28, background: 'var(--brand-red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.75rem', color: '#fff' }}>
-            {user?.avatar}
-          </div>
-          <div style={{ lineHeight: 1 }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase' }}>{user?.name?.split(' ')[0]}</div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--brand-red)', textTransform: 'uppercase' }}>{user?.role}</div>
+        <button className="btn-icon" aria-label="Notifications" onClick={() => navigate(notifPath)}>
+          <Bell size={17} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '5px 12px 5px 6px', border: '1px solid var(--border-color)', borderRadius: 999, background: 'var(--bg-card)', marginLeft: 6 }}>
+          <div className="avatar avatar-sm">{user?.avatar || initials}</div>
+          <div style={{ lineHeight: 1.15 }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 600 }}>{user?.name?.split(' ')[0]}</div>
+            <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{user?.role}</div>
           </div>
         </div>
       </div>
+      <style>{`@media (max-width: 768px){ .topbar-search{ display:none !important; } }`}</style>
     </header>
   );
 }

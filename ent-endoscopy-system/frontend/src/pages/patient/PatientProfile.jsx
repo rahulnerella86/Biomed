@@ -1,74 +1,86 @@
-import { useAuth } from '../../contexts/AuthContext';
-import { User, Phone, Mail, Droplets, Edit2, Save, Shield, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import { useApi, Loading, ErrorState } from '../../hooks/useApi';
 
 export default function PatientProfile() {
   const { user } = useAuth();
+  const { data, loading, error, reload } = useApi('/api/v1/patients?limit=5');
+  const mine = data?.data?.[0];
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: user?.name || '', phone: user?.phone || '', email: user?.email || '', bloodGroup: user?.bloodGroup || '', age: user?.age || '' });
+  const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const current = form || (mine ? { phone: mine.phone || '', blood_group: mine.blood_group || '', age: mine.age || '' } : { phone: '', blood_group: '', age: '' });
+
+  const save = async () => {
+    if (!mine) return;
+    setBusy(true); setMsg('');
+    try {
+      await api.put(`/api/v1/patients/${mine.id}`, {
+        phone: current.phone, blood_group: current.blood_group,
+        age: current.age === '' ? null : Number(current.age),
+      });
+      setEditing(false); setForm(null); reload();
+      setMsg('Profile updated.');
+    } catch (e) { setMsg(e?.message || 'Update failed.'); }
+    finally { setBusy(false); }
+  };
 
   return (
-    <div className="animate-fadeIn" style={{ maxWidth: 700, margin: '0 auto' }}>
-      {/* Profile Header */}
-      <div className="card" style={{ marginBottom: 20, background: 'linear-gradient(135deg,#eff6ff,#f0fdfa)', border: '1px solid #2563eb20' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div className="avatar avatar-xl" style={{ background: 'linear-gradient(135deg,#2563eb,#0d9488)', color: '#fff', fontSize: '1.8rem', border: 'none' }}>{user?.avatar}</div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontFamily: 'Outfit,sans-serif', fontWeight: 800, fontSize: '1.4rem', color: 'var(--text-primary)', marginBottom: 4 }}>{user?.name}</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 8 }}>Patient · ID: {user?.id}</p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <span className="badge badge-teal">Verified Patient</span>
-              <span className="badge badge-blue">{user?.bloodGroup}</span>
-            </div>
-          </div>
-          <button className="btn btn-sm btn-outline" onClick={() => setEditing(e => !e)}>
-            {editing ? <><Save size={14} /> Save</> : <><Edit2 size={14} /> Edit</>}
-          </button>
+    <div className="animate-fadeIn" style={{ maxWidth: 680, margin: '0 auto' }}>
+      <div className="clinical-header">
+        <div>
+          <p className="eyebrow eyebrow--pine">Account</p>
+          <h1 style={{ marginTop: 8 }}>{user?.name}</h1>
+          <p className="page-subtitle">{user?.email} · {user?.role}</p>
         </div>
       </div>
 
-      {/* Info Fields */}
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="section-title" style={{ marginBottom: 16 }}>Personal Information</div>
-        <div className="grid-2" style={{ gap: 16 }}>
-          {[
-            { icon: User,     label: 'Full Name',    key: 'name',       type: 'text' },
-            { icon: Phone,    label: 'Phone',         key: 'phone',      type: 'tel' },
-            { icon: Mail,     label: 'Email',         key: 'email',      type: 'email' },
-            { icon: Droplets, label: 'Blood Group',   key: 'bloodGroup', type: 'text' },
-            { icon: User,     label: 'Age',           key: 'age',        type: 'number' },
-          ].map(f => {
-            const Icon = f.icon;
-            return (
-              <div key={f.key} className="form-group">
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon size={13} />{f.label}</label>
-                {editing ? <input className="form-input" type={f.type} value={form[f.key]} onChange={e => setForm(x => ({ ...x, [f.key]: e.target.value }))} /> : <div style={{ padding: '10px 14px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)' }}>{form[f.key] || '—'}</div>}
-              </div>
-            );
-          })}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="section-header">
+          <span className="section-title" style={{ margin: 0 }}>Patient record</span>
+          {mine && !editing && <button className="btn btn-sm" onClick={() => setEditing(true)}>Edit</button>}
         </div>
-      </div>
-
-      {/* Security */}
-      <div className="card">
-        <div className="section-title" style={{ marginBottom: 16 }}>Security & Privacy</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {[
-            { icon: Lock,   title: 'Change Password',    desc: 'Update your account password' },
-            { icon: Shield, title: 'Two-Factor Auth',     desc: 'Add extra security to your account' },
-          ].map(s => {
-            const Icon = s.icon;
-            return (
-              <div key={s.title} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-hover)', borderRadius: 12, border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Icon size={18} color="var(--text-secondary)" />
-                  <div><div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{s.title}</div><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{s.desc}</div></div>
+        {loading && <Loading label="Loading record…" />}
+        {error && <ErrorState error={error} onRetry={reload} />}
+        {!loading && !error && !mine && <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>No patient record is linked to this login yet. Ask reception to create one for your email address.</p>}
+        {!loading && !error && mine && (
+          <div>
+            <div className="kv"><span>Name</span><span>{mine.name}</span></div>
+            <div className="kv"><span>Patient ID</span><span style={{ fontSize: '0.76rem' }}>{mine.id}</span></div>
+            {editing ? (
+              <div style={{ marginTop: 12 }}>
+                <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={current.phone} onChange={(e) => setForm({ ...current, phone: e.target.value })} /></div>
+                <div className="grid-2">
+                  <div className="form-group"><label className="form-label">Blood group</label><input className="form-input" value={current.blood_group} onChange={(e) => setForm({ ...current, blood_group: e.target.value })} placeholder="e.g. O+" /></div>
+                  <div className="form-group"><label className="form-label">Age</label><input className="form-input" type="number" value={current.age} onChange={(e) => setForm({ ...current, age: e.target.value })} /></div>
                 </div>
-                <button className="btn btn-sm btn-ghost">Update</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary btn-sm" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save changes'}</button>
+                  <button className="btn btn-sm btn-ghost" onClick={() => { setEditing(false); setForm(null); }}>Cancel</button>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div style={{ marginTop: 4 }}>
+                <div className="kv"><span>Phone</span><span>{mine.phone || '—'}</span></div>
+                <div className="kv"><span>Blood group</span><span>{mine.blood_group || '—'}</span></div>
+                <div className="kv"><span>Age</span><span>{mine.age ?? '—'}</span></div>
+              </div>
+            )}
+            {msg && <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: 10 }}>{msg}</p>}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="section-title">Security</div>
+        <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Password changes, two-factor authentication, and audit-log export are not implemented
+          in this deployment. Sessions are JWT Bearer tokens (60-minute expiry); use Sign out
+          to end your session.
+        </p>
       </div>
     </div>
   );

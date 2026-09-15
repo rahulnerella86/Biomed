@@ -1,82 +1,78 @@
-import { mockDoctors, mockPatients, mockAppointments } from '../../data/mockData';
-import { Stethoscope, Users, Activity, Shield, TrendingUp } from 'lucide-react';
+import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useApi, Loading, ErrorState, EmptyState } from '../../hooks/useApi';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const pendingDocs = mockDoctors.filter(d => d.status === 'pending');
+  const { data: docs, loading: dl, error: derr, reload: reloadDocs } = useApi('/api/v1/doctors?limit=100');
+  const { data: pats, loading: pl, error: perr } = useApi('/api/v1/patients?limit=5');
+  const { data: stats, loading: sl, error: serr, reload: reloadStats } = useApi('/api/v1/analytics/summary');
+
+  const docList = docs?.data || [];
+  const pending = docList.filter((d) => (d.status || '').toLowerCase() === 'pending');
+
+  const setStatus = async (id, status) => {
+    try {
+      await api.put(`/api/v1/doctors/${id}`, { status });
+      reloadDocs(); reloadStats();
+    } catch { /* error surfaces via reload state */ }
+  };
 
   return (
     <div className="animate-fadeIn">
-      {/* Hero header */}
-      <div style={{ marginBottom: 48, paddingBottom: 24, borderBottom: '4px solid var(--border-color)' }}>
-        <h1 style={{ fontSize: '4rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em', lineHeight: 1, marginBottom: 12 }}>
-          System <span style={{ color: 'var(--brand-red)' }}>Control.</span>
-        </h1>
-        <p style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-          {user?.name} / Administrator
-        </p>
+      <div className="clinical-header">
+        <div>
+          <p className="eyebrow eyebrow--pine">Administration · live from database</p>
+          <h1 style={{ marginTop: 8 }}>Hospital overview</h1>
+          <p className="page-subtitle">{user?.name} — capacity, load, and approvals</p>
+        </div>
+        <button className="btn btn-sm" onClick={() => { reloadDocs(); reloadStats(); }}>Refresh</button>
       </div>
 
-      {/* Stats */}
-      <div className="grid-4" style={{ marginBottom: 48 }}>
-        {[
-          { label: 'Registered Doctors', value: mockDoctors.length, color: '#0a0a0a' },
-          { label: 'Total Patients',      value: mockPatients.length, color: 'var(--brand-red)' },
-          { label: 'Appointments (MTD)',  value: mockAppointments.length, color: '#0a0a0a' },
-          { label: 'System Uptime',       value: '99.9%', color: '#0a0a0a' },
-        ].map((s, i) => (
-          <div key={i} className="stat-card">
-            <div className="stat-label" style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: 8, marginBottom: 16 }}>{s.label}</div>
-            <div className="stat-value" style={{ color: s.color, fontSize: '3.5rem' }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {sl && <Loading label="Loading operational summary…" />}
+      {serr && <ErrorState error={serr} onRetry={reloadStats} />}
+      {stats && (
+        <div className="grid-4" style={{ marginBottom: 20 }}>
+          <div className="stat-card"><div className="stat-label">Doctors</div><div className="stat-value">{dl ? '—' : docList.length}</div><div className="stat-change">{pending.length} pending approval</div></div>
+          <div className="stat-card"><div className="stat-label">Appointments</div><div className="stat-value">{stats.appointments.total}</div><div className="stat-change">Across all statuses</div></div>
+          <div className="stat-card"><div className="stat-label">Bed occupancy</div><div className="stat-value">{stats.beds.occupancyPct}%</div><div className="stat-change">{stats.beds.occupied}/{stats.beds.total} occupied</div></div>
+          <div className="stat-card"><div className="stat-label">Collected / outstanding</div><div className="stat-value" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>₹{stats.billing.collected.toLocaleString()} / ₹{stats.billing.outstanding.toLocaleString()}</div><div className="stat-change">Manual records, no gateway</div></div>
+        </div>
+      )}
 
       <div className="grid-2">
-        {/* Pending Doctor Approvals */}
-        <div className="card" style={{ padding: 0 }}>
-          <div style={{ padding: '24px 24px 16px', borderBottom: '2px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase' }}>Pending Approvals</h2>
-            <span className="badge badge-red">{pendingDocs.length}</span>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', alignSelf: 'start' }}>
+          <div className="section-header" style={{ padding: '16px 18px 12px', margin: 0 }}>
+            <span className="section-title" style={{ margin: 0 }}>Doctor approvals</span>
+            <span className="badge">{pending.length} pending</span>
           </div>
-          {pendingDocs.length === 0 ? (
-            <p style={{ padding: 24, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>No pending approvals.</p>
-          ) : pendingDocs.map((d, i) => (
-            <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '48px 1fr auto', gap: 16, alignItems: 'center', padding: '20px 24px', borderBottom: i < pendingDocs.length - 1 ? '2px solid var(--border-color)' : 'none' }}>
-              <div style={{ width: 44, height: 44, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, border: '2px solid var(--border-color)' }}>
-                {d.avatar}
-              </div>
+          {dl && <div style={{ padding: 18 }}><Loading label="Loading doctors…" /></div>}
+          {derr && <div style={{ padding: 18 }}><ErrorState error={derr} onRetry={reloadDocs} /></div>}
+          {!dl && !derr && pending.length === 0 && <div style={{ padding: 18 }}><EmptyState title="No pending approvals" /></div>}
+          {pending.map((d) => (
+            <div key={d.id} className="list-row" style={{ gridTemplateColumns: '1fr auto' }}>
               <div>
-                <div style={{ fontWeight: 900, fontSize: '1rem', textTransform: 'uppercase' }}>{d.name}</div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{d.specialty} · {d.license}</div>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{d.name}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{d.specialty}</div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-sm" style={{ border: '2px solid var(--border-color)', color: 'var(--brand-red)', fontWeight: 800 }}>Reject</button>
-                <button className="btn btn-sm btn-primary">Approve</button>
+                <button className="btn btn-sm" onClick={() => setStatus(d.id, 'rejected')}>Reject</button>
+                <button className="btn btn-sm btn-primary" onClick={() => setStatus(d.id, 'approved')}>Approve</button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Audit Log */}
-        <div className="card" style={{ padding: 0 }}>
-          <div style={{ padding: '24px 24px 16px', borderBottom: '2px solid var(--border-color)' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, textTransform: 'uppercase' }}>System Audit Log</h2>
-          </div>
-          {[
-            { time: '10:45 AM', event: 'New doctor registration: Dr. Meena Pillai', type: 'info' },
-            { time: '09:30 AM', event: 'Hardware sync completed (ESP32-CAM-001)', type: 'success' },
-            { time: '08:15 AM', event: 'AI Model TFLite weights updated to v2.4', type: 'info' },
-            { time: 'Yesterday', event: 'Failed login attempt from IP 192.168.1.44', type: 'warning' },
-            { time: 'Yesterday', event: 'Database backup completed successfully', type: 'success' },
-          ].map((log, i, arr) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '80px 12px 1fr', gap: 16, alignItems: 'flex-start', padding: '16px 24px', borderBottom: i < arr.length - 1 ? '2px solid var(--border-color)' : 'none' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{log.time}</div>
-              <div style={{ width: 10, height: 10, background: log.type === 'success' ? 'var(--color-success)' : log.type === 'warning' ? 'var(--color-warning)' : 'var(--brand-red)', border: '2px solid var(--border-color)', marginTop: 2 }}></div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{log.event}</div>
-            </div>
-          ))}
+        <div className="card" style={{ alignSelf: 'start' }}>
+          <div className="section-title">What this dashboard does not show</div>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+            There is no audit-log viewer endpoint, no hardware telemetry, and no AI model
+            telemetry in this backend — so this page shows none. The previous version listed
+            a fabricated audit trail including an “ESP32 sync” and a “TFLite update”.
+            Audit events are still written server-side on register, login, patient view, and
+            record creation.
+            {!pl && !perr && pats ? ` Patient directory currently holds ${pats.total} records.` : ''}
+          </p>
         </div>
       </div>
     </div>

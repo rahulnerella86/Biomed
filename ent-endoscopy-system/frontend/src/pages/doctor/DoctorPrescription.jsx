@@ -1,125 +1,67 @@
 import { useState } from 'react';
-import { Save, Plus, CheckCircle } from 'lucide-react';
-import { mockPatients } from '../../data/mockData';
+import { api } from '../../services/api';
+import { useApi, Loading, ErrorState } from '../../hooks/useApi';
 
 export default function DoctorPrescription() {
+  const { data: meds, loading: ml, error: me } = useApi('/api/v1/prescriptions/medicines?limit=100');
   const [patientId, setPatientId] = useState('');
   const [diagnosis, setDiagnosis] = useState('');
-  const [remarks, setRemarks] = useState('');
-  const [medicines, setMedicines] = useState([{ name: '', dosage: '', frequency: '', duration: '' }]);
-  const [saved, setSaved] = useState(false);
+  const [lines, setLines] = useState([{ medicine_name: '', dosage: '', frequency: '', duration: '' }]);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const medList = meds?.data || [];
 
-  const selectedPatient = mockPatients.find(p => p.id === patientId);
-  const addMed = () => setMedicines([...medicines, { name: '', dosage: '', frequency: '', duration: '' }]);
-  const updateMed = (i, f, v) => { const m = [...medicines]; m[i][f] = v; setMedicines(m); };
-  const removeMed = i => setMedicines(medicines.filter((_, j) => j !== i));
+  const setLine = (i, k, v) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => { setSaved(false); setPatientId(''); setDiagnosis(''); setRemarks(''); setMedicines([{ name: '', dosage: '', frequency: '', duration: '' }]); }, 3000);
+  const save = async (e) => {
+    e.preventDefault();
+    setMsg(''); setErr('');
+    const items = lines.filter((l) => l.medicine_name.trim());
+    if (!patientId.trim() || items.length === 0) { setErr('Patient ID and at least one medicine are required.'); return; }
+    setBusy(true);
+    try {
+      await api.post('/api/v1/prescriptions', { patient_id: patientId.trim(), diagnosis: diagnosis.trim() || undefined, items });
+      setMsg('Prescription saved to the database.');
+      setLines([{ medicine_name: '', dosage: '', frequency: '', duration: '' }]);
+    } catch (e2) { setErr(e2?.message || 'Could not save prescription. Only doctor accounts may prescribe.'); }
+    finally { setBusy(false); }
   };
 
   return (
     <div className="animate-fadeIn">
-      <div style={{ marginBottom: 48, paddingBottom: 24, borderBottom: '4px solid var(--border-color)' }}>
-        <h1 style={{ fontSize: '4rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em', lineHeight: 1 }}>
-          Prescription <span style={{ color: 'var(--brand-red)' }}>Generator.</span>
-        </h1>
-      </div>
-
-      <div className="grid-2" style={{ gap: 32, alignItems: 'flex-start' }}>
-        {/* Form */}
-        <div className="card">
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', borderBottom: '2px solid var(--border-color)', paddingBottom: 16, marginBottom: 24 }}>01 / Patient Details</div>
-
-          <div className="form-group">
-            <label className="form-label">Select Patient</label>
-            <select className="form-select" value={patientId} onChange={e => setPatientId(e.target.value)}>
-              <option value="">-- Choose Patient --</option>
-              {mockPatients.map(p => <option key={p.id} value={p.id}>{p.name} ({p.age}y, {p.gender})</option>)}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Primary Diagnosis</label>
-            <input className="form-input" value={diagnosis} onChange={e => setDiagnosis(e.target.value)} placeholder="e.g. Acute Otitis Media" />
-          </div>
-
-          <div style={{ fontSize: '1.2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.02em', borderBottom: '2px solid var(--border-color)', paddingBottom: 16, marginBottom: 24, marginTop: 32 }}>02 / Medications</div>
-
-          {medicines.map((m, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr 40px', gap: 8, marginBottom: 12, alignItems: 'flex-end' }}>
-              <div><label className="form-label">Medicine</label><input className="form-input" placeholder="Name" value={m.name} onChange={e => updateMed(i, 'name', e.target.value)} /></div>
-              <div><label className="form-label">Dosage</label><input className="form-input" placeholder="500mg" value={m.dosage} onChange={e => updateMed(i, 'dosage', e.target.value)} /></div>
-              <div><label className="form-label">Frequency</label>
-                <select className="form-select" value={m.frequency} onChange={e => updateMed(i, 'frequency', e.target.value)}>
-                  <option value="">--</option><option>Once daily</option><option>Twice daily</option><option>Three times daily</option><option>As needed</option>
-                </select>
-              </div>
-              <div><label className="form-label">Duration</label><input className="form-input" placeholder="7 days" value={m.duration} onChange={e => updateMed(i, 'duration', e.target.value)} /></div>
-              {medicines.length > 1 && <button className="btn btn-icon" style={{ color: 'var(--brand-red)', alignSelf: 'flex-end', height: 42 }} onClick={() => removeMed(i)}>✕</button>}
-            </div>
-          ))}
-          <button className="btn btn-ghost btn-sm" onClick={addMed} style={{ marginTop: 8 }}><Plus size={14} /> Add Medicine</button>
-
-          <div className="form-group" style={{ marginTop: 24 }}>
-            <label className="form-label">Remarks & Instructions</label>
-            <textarea className="form-textarea" rows={3} value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Specific instructions for the patient..." />
-          </div>
-
-          <button className="btn btn-primary w-full" style={{ marginTop: 24, padding: 16, fontSize: '1rem' }} onClick={handleSave} disabled={!patientId || !diagnosis || saved}>
-            {saved ? <><CheckCircle size={18} /> Sent to Patient ✓</> : <><Save size={18} /> Save & Send Prescription</>}
-          </button>
-        </div>
-
-        {/* Live Preview */}
-        <div style={{ background: '#fff', border: '2px solid #0a0a0a', padding: 40, boxShadow: '6px 6px 0px #0a0a0a', color: '#0a0a0a', fontFamily: '"Inter", sans-serif' }}>
-          <div style={{ borderBottom: '4px solid #0a0a0a', paddingBottom: 16, marginBottom: 24 }}>
-            <div style={{ fontSize: '2rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' }}>ENT Scope Pro</div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: '#666' }}>Dr. Sarah Jenkins · ENT Specialist</div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-            <div>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#666', marginBottom: 4 }}>Patient</div>
-              <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '1.1rem' }}>{selectedPatient ? selectedPatient.name : '—'}</div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: '#666', marginBottom: 4 }}>Date</div>
-              <div style={{ fontWeight: 900 }}>{new Date().toLocaleDateString()}</div>
-            </div>
-          </div>
-
-          <div style={{ background: '#0a0a0a', color: '#fff', padding: '8px 16px', marginBottom: 24 }}>
-            <span style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '0.8rem' }}>Diagnosis: </span>
-            <span style={{ fontWeight: 700 }}>{diagnosis || '—'}</span>
-          </div>
-
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.05em', marginBottom: 16, fontStyle: 'italic' }}>Rx</div>
-            {medicines.filter(m => m.name).length === 0 ? (
-              <div style={{ fontSize: '0.85rem', color: '#999', fontStyle: 'italic' }}>No medications added...</div>
-            ) : medicines.map((m, i) => m.name && (
-              <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #ccc' }}>
-                <div style={{ fontWeight: 900, textTransform: 'uppercase', fontSize: '1rem' }}>{i+1}. {m.name} {m.dosage && <span style={{ color: '#e64833' }}>({m.dosage})</span>}</div>
-                <div style={{ fontWeight: 600, color: '#666', fontSize: '0.85rem', marginTop: 4 }}>Sig: {m.frequency} {m.duration && `for ${m.duration}`}</div>
-              </div>
-            ))}
-          </div>
-
-          {remarks && (
-            <div style={{ border: '2px solid #0a0a0a', padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8 }}>Instructions</div>
-              <p style={{ fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.5 }}>{remarks}</p>
-            </div>
-          )}
-
-          <div style={{ borderTop: '4px solid #0a0a0a', paddingTop: 16, marginTop: 40, textAlign: 'right' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.03em' }}>Dr. S. Jenkins</div>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#666' }}>Doctor's Signature</div>
-          </div>
+      <div className="clinical-header">
+        <div>
+          <p className="eyebrow eyebrow--pine">Prescribing · saved to database</p>
+          <h1 style={{ marginTop: 8 }}>New prescription</h1>
+          <p className="page-subtitle">Doctor accounts only, enforced server-side</p>
         </div>
       </div>
+
+      <form onSubmit={save} className="card" style={{ maxWidth: 720 }}>
+        <div className="grid-2">
+          <div className="form-group"><label className="form-label">Patient ID</label><input className="form-input" value={patientId} onChange={(e) => setPatientId(e.target.value)} placeholder="Paste patient UUID" required /></div>
+          <div className="form-group"><label className="form-label">Diagnosis</label><input className="form-input" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="e.g. Otitis media" /></div>
+        </div>
+        {ml && <Loading label="Loading formulary…" />}
+        {me && <ErrorState error={me} />}
+        {lines.map((l, i) => (
+          <div key={i} className="grid-2" style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+            <div className="form-group">
+              <label className="form-label">Medicine {i + 1}</label>
+              <input className="form-input" list="formulary" value={l.medicine_name} onChange={(e) => setLine(i, 'medicine_name', e.target.value)} placeholder="Start typing…" />
+              <datalist id="formulary">{medList.map((m) => <option key={m.id} value={m.name} />)}</datalist>
+            </div>
+            <div className="form-group"><label className="form-label">Dosage</label><input className="form-input" value={l.dosage} onChange={(e) => setLine(i, 'dosage', e.target.value)} placeholder="e.g. 500mg" /></div>
+            <div className="form-group"><label className="form-label">Frequency</label><input className="form-input" value={l.frequency} onChange={(e) => setLine(i, 'frequency', e.target.value)} placeholder="e.g. twice daily" /></div>
+            <div className="form-group"><label className="form-label">Duration</label><input className="form-input" value={l.duration} onChange={(e) => setLine(i, 'duration', e.target.value)} placeholder="e.g. 7 days" /></div>
+          </div>
+        ))}
+        <button type="button" className="btn btn-sm" onClick={() => setLines((ls) => [...ls, { medicine_name: '', dosage: '', frequency: '', duration: '' }])}>Add line</button>
+        {err && <p style={{ color: 'var(--color-error)', fontSize: '0.85rem', marginTop: 10 }}>{err}</p>}
+        {msg && <p style={{ color: 'var(--color-success)', fontSize: '0.85rem', marginTop: 10 }}>{msg}</p>}
+        <div><button className="btn btn-primary" style={{ marginTop: 14 }} disabled={busy}>{busy ? 'Saving…' : 'Save prescription'}</button></div>
+      </form>
     </div>
   );
 }

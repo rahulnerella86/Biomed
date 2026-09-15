@@ -1,67 +1,65 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Heart, Stethoscope, Shield, ArrowRight, Activity, Loader } from 'lucide-react';
+import { Heart, Stethoscope, Shield, ArrowRight, Loader, FlaskConical, Pill, UserCog, BedDouble } from 'lucide-react';
 
-/* ─── Landing: choose role ─── */
 export function LoginSelector() {
   const navigate = useNavigate();
-  const cards = [
-    { role: 'patient', icon: Heart,       title: '01 / Patient',   desc: 'Appointments, scans & teleconsult.', color: '#0a0a0a', bg: '#ffffff', to: '/login/patient' },
-    { role: 'doctor',  icon: Stethoscope, title: '02 / Doctor',    desc: 'Live endoscope, AI diagnosis, Rx.', color: '#ffffff', bg: '#e64833', to: '/login/doctor' },
-    { role: 'admin',   icon: Shield,      title: '03 / Admin',      desc: 'System health, doctor approvals.', color: '#ffffff', bg: '#0a0a0a', to: '/login/admin' },
+  const main = [
+    { role: 'Patient', desc: 'Appointments, records, triage and teleconsults.', to: '/login/patient', icon: Heart },
+    { role: 'Doctor', desc: 'Clinic day, endoscopy, prescriptions and labs.', to: '/login/doctor', icon: Stethoscope },
+    { role: 'Admin', desc: 'Capacity, staff, billing and cloud operations.', to: '/login/admin', icon: Shield },
+  ];
+  const staff = [
+    { title: 'Nurse', meta: 'nurse@medicore.demo', to: '/login/nurse', icon: BedDouble },
+    { title: 'Reception', meta: 'reception@medicore.demo', to: '/login/receptionist', icon: UserCog },
+    { title: 'Pharmacy', meta: 'pharmacy@medicore.demo', to: '/login/pharmacist', icon: Pill },
+    { title: 'Lab Tech', meta: 'lab@medicore.demo', to: '/login/labtech', icon: FlaskConical },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page)', padding: 48, display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 64, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-            <div style={{ width: 64, height: 64, background: '#e64833', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #0a0a0a' }}>
-              <Activity size={32} color="#fff" />
-            </div>
-            <div>
-              <h1 style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1, textTransform: 'uppercase', letterSpacing: '-0.05em' }}>ENT Scope</h1>
-              <p style={{ fontSize: '1rem', fontWeight: 700, textTransform: 'uppercase', color: '#666' }}>Smart Portable Endoscopy</p>
-            </div>
-          </div>
-          <h2 style={{ fontSize: '4.5rem', fontWeight: 900, lineHeight: 0.9, letterSpacing: '-0.05em', maxWidth: 800, textTransform: 'uppercase' }}>
-            Choose Your <br/><span style={{ color: '#e64833' }}>Platform Portal.</span>
-          </h2>
+    <div className="ed-page" style={{ padding: '48px 40px', maxWidth: 1180, margin: '0 auto' }}>
+      <Link to="/" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600 }}>← Back to site</Link>
+      <p className="eyebrow eyebrow--pine" style={{ marginTop: 28 }}>MediCore HMS · Role portals</p>
+      <h1 style={{ fontSize: 'clamp(2.2rem,4.5vw,3.6rem)', marginTop: 10 }}>Choose your portal.</h1>
+      <p style={{ color: 'var(--text-secondary)', marginTop: 12, maxWidth: 620 }}>
+        10 departments · OPD/IPD · Pharmacy · Lab · Billing · Beds · Triage · Telehealth. Same backend, permissions enforced per role.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16, marginTop: 32 }}>
+        {main.map((c) => (
+          <button key={c.role} onClick={() => navigate(c.to)} className="card" style={{ textAlign: 'left', cursor: 'pointer', padding: 26 }}>
+            <c.icon size={20} strokeWidth={1.75} color="var(--pine)" />
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginTop: 18 }}>{c.role}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginTop: 6 }}>{c.desc}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 18, fontWeight: 600, fontSize: '0.85rem' }}>Enter <ArrowRight size={15} /></div>
+          </button>
+        ))}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="eyebrow" style={{ marginBottom: 12 }}>Staff portals · demo access</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: 10 }}>
+          {staff.map((c) => (
+            <button key={c.title} onClick={() => navigate(c.to)} className="btn" style={{ justifyContent: 'flex-start', padding: '12px 14px' }}>
+              <c.icon size={15} /> <span>{c.title}</span>
+              <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 500 }}>{c.meta}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Role cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 0, border: '2px solid #0a0a0a', flex: 1 }}>
-        {cards.map((c, i) => {
-          const Icon = c.icon;
-          return (
-            <div
-              key={c.role}
-              onClick={() => navigate(c.to)}
-              style={{ background: c.bg, padding: 40, cursor: 'pointer', display: 'flex', flexDirection: 'column', borderRight: i < cards.length - 1 ? '2px solid #0a0a0a' : 'none', transition: 'all 0.2s', position: 'relative' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translate(-4px, -4px)'; e.currentTarget.style.boxShadow = '8px 8px 0px #0a0a0a'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translate(0, 0)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <Icon size={48} color={c.color} style={{ marginBottom: 'auto' }} />
-              <div style={{ marginTop: 64 }}>
-                <h3 style={{ fontSize: '2.5rem', fontWeight: 900, color: c.color, textTransform: 'uppercase', letterSpacing: '-0.03em', marginBottom: 12 }}>{c.title}</h3>
-                <p style={{ fontSize: '1.1rem', fontWeight: 600, color: c.color, opacity: 0.8, marginBottom: 32 }}>{c.desc}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.color, fontWeight: 800, textTransform: 'uppercase', fontSize: '1.2rem' }}>
-                  Enter <ArrowRight size={24} strokeWidth={3} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <span className="badge">AWS ready</span>
+        <span className="badge">Azure ready</span>
+        <span className="badge">Dockerized</span>
+        <span className="badge">Demo password · demo123</span>
       </div>
     </div>
   );
 }
 
-/* ─── Shared Login Form ─── */
-function LoginForm({ role, title, bgLeft, colorLeft, credentials }) {
+function LoginForm({ role, title, blurb, credentials, accent = 'General portal' }) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState(credentials.email);
@@ -73,66 +71,55 @@ function LoginForm({ role, title, bgLeft, colorLeft, credentials }) {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      await login(email, password, role);
-      navigate(`/${role}/dashboard`);
+      const u = await login(email, password);
+      const portalMap = { patient: 'patient', doctor: 'doctor', admin: 'admin', nurse: 'nurse', receptionist: 'nurse', pharmacist: 'nurse', labtech: 'nurse' };
+      const portal = portalMap[u.role] || 'patient';
+      if (portal === 'nurse') navigate('/nurse/dashboard');
+      else navigate(`/${portal}/dashboard`);
     } catch (err) {
-      setError('Invalid credentials.');
+      setError(err?.message || 'Sign-in failed. Check the demo account and that the API is running.');
     } finally { setLoading(false); }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-page)' }}>
-      {/* Left panel */}
-      <div style={{ width: '50%', background: bgLeft, color: colorLeft, borderRight: '2px solid #0a0a0a', padding: '64px 48px', display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: colorLeft, fontWeight: 800, textDecoration: 'none', textTransform: 'uppercase', fontSize: '0.85rem', marginBottom: 'auto' }}>
-          ← Back to Selection
-        </Link>
-        <div>
-          <h2 style={{ fontSize: '5rem', fontWeight: 900, lineHeight: 0.9, letterSpacing: '-0.05em', textTransform: 'uppercase', marginBottom: 24 }}>{title}</h2>
-          <p style={{ fontSize: '1.2rem', fontWeight: 600, maxWidth: 400, opacity: 0.9 }}>
-            Secure access to the ENT Endoscopy diagnostic and teleconsultation platform.
-          </p>
-        </div>
+    <div className="auth-wrap">
+      <div className="auth-side">
+        <p className="eyebrow" style={{ color: '#9DBEA9' }}>MediCore HMS · {accent}</p>
+        <h2 style={{ marginTop: 12 }}>{title}</h2>
+        <p style={{ marginTop: 12, color: '#B9C4BC', lineHeight: 1.65, maxWidth: 420 }}>{blurb}</p>
+        <p style={{ marginTop: 28, fontSize: '0.75rem', color: '#8B948C' }}>JWT · RBAC · Audit-logged · AWS / Azure deployable</p>
       </div>
-
-      {/* Right panel - form */}
-      <div style={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48, background: '#fff' }}>
-        <div style={{ width: '100%', maxWidth: 400 }} className="animate-slideUp">
-          <h3 style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.03em', marginBottom: 8 }}>Sign In.</h3>
-          <p style={{ fontWeight: 600, color: '#666', marginBottom: 32 }}>Enter your credentials to continue.</p>
-
-          {error && <div className="badge badge-red" style={{ marginBottom: 20, padding: 12, fontSize: '0.85rem' }}>{error}</div>}
-
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Email address</label>
-              <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ border: '2px solid #0a0a0a', borderRadius: 0, padding: 16 }} />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Password</label>
-              <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ border: '2px solid #0a0a0a', borderRadius: 0, padding: 16 }} />
-            </div>
-            <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading} style={{ background: '#0a0a0a', marginTop: 12, fontSize: '1.1rem', padding: 18 }}>
-              {loading ? <><Loader size={20} className="animate-spin" /> Authenticating...</> : 'Authenticate →'}
-            </button>
-          </form>
-
-          <div style={{ marginTop: 32, padding: 20, border: '2px solid #0a0a0a', background: '#f5f5f5' }}>
-            <p style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: 8 }}>Demo Credentials</p>
-            <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>{credentials.email} / {credentials.password}</p>
+      <div className="auth-panel">
+        <Link to="/portals" style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', textDecoration: 'none' }}>← All portals</Link>
+        <h1 style={{ fontSize: '2.2rem', marginTop: 18 }}>Sign in</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 6, fontSize: '0.92rem' }}>Use your hospital credentials to continue.</p>
+        {error && <div className="badge badge-red" style={{ marginTop: 16, padding: '10px 12px', textTransform: 'none', letterSpacing: 0 }}>{error}</div>}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 24 }}>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">Email address</label>
+            <input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
+          <div className="form-group" style={{ margin: 0 }}>
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading} style={{ marginTop: 6 }}>
+            {loading ? <><Loader size={17} /> Authenticating…</> : 'Sign in →'}
+          </button>
+        </form>
+        <div className="card" style={{ marginTop: 24, background: 'var(--bg-wash)' }}>
+          <p className="eyebrow" style={{ marginBottom: 6 }}>Demo credentials</p>
+          <p style={{ fontSize: '0.88rem', fontWeight: 600 }}>{credentials.email} · {credentials.password}</p>
         </div>
       </div>
     </div>
   );
 }
 
-export function PatientLogin() {
-  return <LoginForm role="patient" title="Patient Login." bgLeft="#e64833" colorLeft="#ffffff" credentials={{ email: 'patient@ent.demo', password: 'demo123' }} />;
-}
-export function DoctorLogin() {
-  return <LoginForm role="doctor" title="Doctor Login." bgLeft="#0a0a0a" colorLeft="#ffffff" credentials={{ email: 'doctor@ent.demo', password: 'demo123' }} />;
-}
-export function AdminLogin() {
-  return <LoginForm role="admin" title="System Admin." bgLeft="#ffffff" colorLeft="#0a0a0a" credentials={{ email: 'admin@ent.demo', password: 'demo123' }} />;
-}
+export function PatientLogin() { return <LoginForm role="patient" title="Care that remembers you." blurb="Appointments, records, reports, bills and teleconsults — in one calm place." credentials={{ email: 'patient@medicore.demo', password: 'demo123' }} accent="Patient portal" />; }
+export function DoctorLogin() { return <LoginForm role="doctor" title="The clinic day, clarified." blurb="Schedule, patients, endoscopy, prescriptions and labs — with AI drafts kept visibly separate." credentials={{ email: 'doctor@medicore.demo', password: 'demo123' }} accent="Doctor portal" />; }
+export function AdminLogin() { return <LoginForm role="admin" title="Run the whole hospital." blurb="Capacity, staff, departments, billing and analytics with full audit coverage." credentials={{ email: 'admin@medicore.demo', password: 'demo123' }} accent="Admin portal" />; }
+export function NurseLogin() { return <LoginForm role="nurse" title="The ward, in order." blurb="Beds, patients and lab coordination for nursing teams." credentials={{ email: 'nurse@medicore.demo', password: 'demo123' }} accent="Nursing portal" />; }
+export function ReceptionistLogin() { return <LoginForm role="receptionist" title="Front desk, unrushed." blurb="Admissions, appointments and patient intake." credentials={{ email: 'reception@medicore.demo', password: 'demo123' }} accent="Reception portal" />; }
+export function PharmacistLogin() { return <LoginForm role="pharmacist" title="Dispense with confidence." blurb="Prescription queue and medicine inventory." credentials={{ email: 'pharmacy@medicore.demo', password: 'demo123' }} accent="Pharmacy portal" />; }
+export function LabTechLogin() { return <LoginForm role="labtech" title="Results, on time." blurb="Test orders, status tracking and report uploads." credentials={{ email: 'lab@medicore.demo', password: 'demo123' }} accent="Laboratory portal" />; }

@@ -1,57 +1,67 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { api, getToken, setToken, clearToken } from '../services/api';
 
 const AuthContext = createContext(null);
 
-const MOCK_USERS = {
-  patient: {
-    id: 'p1', name: 'Arjun Sharma', email: 'patient@ent.demo', role: 'patient',
-    avatar: 'AS', age: 34, phone: '+91 98765 43210', bloodGroup: 'O+',
-    hospital: 'Apollo Hospital',
-  },
-  doctor: {
-    id: 'd1', name: 'Dr. Sarah Jenkins', email: 'doctor@ent.demo', role: 'doctor',
-    avatar: 'SJ', specialty: 'ENT Specialist', license: 'MCI-2019-ENT-4521',
-    hospital: 'Apollo Hospital', experience: 12,
-  },
-  admin: {
-    id: 'a1', name: 'Admin User', email: 'admin@ent.demo', role: 'admin',
-    avatar: 'AU', department: 'System Administration',
-  },
-};
+function normalizeUser(u) {
+  if (!u) return null;
+  return {
+    id: u.id, email: u.email, name: u.full_name || u.name, full_name: u.full_name || u.name,
+    role: (u.role || 'patient').toLowerCase(), avatar: (u.full_name||u.name||'U').split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase(),
+    phone: u.phone, is_active: u.is_active
+  };
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('ent_user');
-      if (stored) setUser(JSON.parse(stored));
-    } catch { /* ignore */ }
-    setLoading(false);
+    const init = async () => {
+      const token = getToken();
+      if (token) {
+        try {
+          const me = await api.get('/api/v1/auth/me');
+          const n = normalizeUser(me);
+          setUser(n); localStorage.setItem('medicore_user', JSON.stringify(n));
+        } catch { clearToken(); localStorage.removeItem('medicore_user'); }
+      }
+      setLoading(false);
+    };
+    init();
   }, []);
 
-  const login = async (email, password, role) => {
-    await new Promise(r => setTimeout(r, 800)); // simulate network
-    const mockUser = MOCK_USERS[role];
-    if (!mockUser) throw new Error('Invalid credentials');
-    setUser(mockUser);
-    localStorage.setItem('ent_user', JSON.stringify(mockUser));
-    return mockUser;
+  const login = async (email, password) => {
+    // Real backend authentication only. Errors are surfaced, never masked
+    // by a local mock login.
+    const res = await api.post('/api/v1/auth/login', { email, password });
+    setToken(res.access_token);
+    const n = normalizeUser(res.user);
+    setUser(n);
+    localStorage.setItem('medicore_user', JSON.stringify(n));
+    return n;
+  };
+
+  const register = async (payload) => {
+    const res = await api.post('/api/v1/auth/register', payload);
+    setToken(res.access_token);
+    const n = normalizeUser(res.user);
+    setUser(n);
+    localStorage.setItem('medicore_user', JSON.stringify(n));
+    return n;
   };
 
   const logout = () => {
+    clearToken();
     setUser(null);
-    localStorage.removeItem('ent_user');
+    localStorage.removeItem('medicore_user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export function useAuth() { return useContext(AuthContext); }

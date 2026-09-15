@@ -1,49 +1,47 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
-import { useLocation } from 'react-router-dom';
 
 const pageTitles = {
-  '/patient/dashboard':     { title: 'Dashboard',        subtitle: 'Welcome back, here\'s your health overview' },
-  '/patient/book':          { title: 'Book Appointment', subtitle: 'Schedule a consultation with a specialist' },
-  '/patient/reports':       { title: 'My Reports',       subtitle: 'View and download your ENT scan reports' },
-  '/patient/ai-scan':       { title: 'AI Scan Results',  subtitle: 'AI-powered endoscopy diagnosis results' },
-  '/patient/teleconsult':   { title: 'Teleconsultation', subtitle: 'Connect with your doctor via video call' },
-  '/patient/history':       { title: 'Medical History',  subtitle: 'Your complete ENT medical records' },
-  '/patient/notifications': { title: 'Notifications',    subtitle: 'Alerts, reminders and messages' },
-  '/patient/profile':       { title: 'My Profile',       subtitle: 'Manage your personal information' },
-  '/doctor/dashboard':      { title: 'Dashboard',        subtitle: 'Today\'s overview and pending actions' },
-  '/doctor/patients':       { title: 'Patient Management', subtitle: 'Search, manage, and review patient records' },
-  '/doctor/endoscope':      { title: 'Live Endoscope',   subtitle: 'Real-time ENT camera viewer and controls' },
-  '/doctor/ai-diagnosis':   { title: 'AI Diagnosis',     subtitle: 'Run AI analysis on captured endoscopy images' },
-  '/doctor/telemedicine':   { title: 'Telemedicine',     subtitle: 'Start and manage video consultations' },
-  '/doctor/prescription':   { title: 'Prescription Generator', subtitle: 'Create and send digital prescriptions' },
-  '/doctor/appointments':   { title: 'Appointments',     subtitle: 'Manage your schedule and availability' },
-  '/doctor/analytics':      { title: 'Analytics',        subtitle: 'Performance metrics and clinical insights' },
-  '/doctor/hardware':       { title: 'Hardware Status',  subtitle: 'ESP32 device monitoring and control' },
-  '/admin/dashboard':       { title: 'Admin Dashboard',  subtitle: 'System-wide overview and pending approvals' },
-  '/admin/doctors':         { title: 'Manage Doctors',   subtitle: 'Approve, review and manage doctor accounts' },
-  '/admin/patients':        { title: 'Manage Patients',  subtitle: 'Patient records, search and audit logs' },
-  '/admin/settings':        { title: 'System Settings',  subtitle: 'Platform configuration and security settings' },
+  '/patient/dashboard':     { title: 'Good morning — your health at a glance', subtitle: 'Appointments, reports and next steps' },
+  '/patient/book':          { title: 'Book an appointment', subtitle: 'Live availability across 10 departments' },
+  '/patient/reports':       { title: 'Reports', subtitle: 'ENT scans, lab results and downloads' },
+  '/patient/ai-scan':       { title: 'Submit a scan image', subtitle: 'Stored for doctor review — no software diagnosis' },
+  '/patient/teleconsult':   { title: 'Teleconsultation', subtitle: 'Scheduled remote visits (no in-browser video)' },
+  '/patient/history':       { title: 'Medical history', subtitle: 'Your longitudinal record' },
+  '/patient/notifications': { title: 'Notifications', subtitle: 'Reminders and messages' },
+  '/patient/profile':       { title: 'Profile', subtitle: 'Personal and contact details' },
+  '/doctor/dashboard':      { title: 'Today in clinic', subtitle: 'Schedule, waiting list and priorities' },
+  '/doctor/patients':       { title: 'Patients', subtitle: 'Search and review records' },
+  '/doctor/endoscope':      { title: 'Endoscopy images', subtitle: 'Upload → queue for review → save to record' },
+  '/doctor/ai-diagnosis':   { title: 'Endoscopy images', subtitle: 'Upload → queue for review → save to record' },
+  '/doctor/telemedicine':   { title: 'Telemedicine', subtitle: 'Scheduled remote visits (no in-browser video)' },
+  '/doctor/prescription':   { title: 'Prescriptions', subtitle: 'Create and dispatch' },
+  '/doctor/appointments':   { title: 'Appointments', subtitle: 'Schedule and availability' },
+  '/doctor/analytics':      { title: 'Analytics', subtitle: 'Volume and performance' },
+  '/doctor/hardware':       { title: 'Device status', subtitle: 'External hardware not connected' },
+  '/admin/dashboard':       { title: 'Hospital overview', subtitle: 'Capacity, load and approvals' },
+  '/admin/ai-insights':       { title: 'Operational overview', subtitle: 'Descriptive counts — no forecasting model' },
+  '/admin/doctors':         { title: 'Doctors', subtitle: 'Accounts and departments' },
+  '/admin/patients':        { title: 'Patients', subtitle: 'Records and audit trail' },
+  '/admin/settings':        { title: 'System settings', subtitle: 'Configuration and deployment' },
 };
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { title, subtitle } = pageTitles[location.pathname] || { title: 'ENT Platform', subtitle: '' };
+  const { title, subtitle } = pageTitles[location.pathname] || { title: 'MediCore', subtitle: 'Hospital platform' };
 
   return (
     <div className="app-shell">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="app-main">
-        <Topbar
-          onMenuToggle={() => setSidebarOpen(o => !o)}
-          title={title}
-          subtitle={subtitle}
-        />
+        <Topbar onMenuToggle={() => setSidebarOpen((o) => !o)} title={title} subtitle={subtitle} />
         <main className="app-content animate-fadeIn">
-          <Outlet />
+          <div className="app-content-inner">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
